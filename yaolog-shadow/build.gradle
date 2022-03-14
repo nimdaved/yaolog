@@ -1,0 +1,61 @@
+buildscript {
+
+    repositories {
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath('io.spring.gradle:dependency-management-plugin:+')
+    }
+}
+
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+}
+
+
+
+group 'org.nimdaved.util' // Maven groupId
+version currentVersion // Maven version
+
+jar {
+    archiveBaseName = 'yaolog-shadow'
+    archiveVersion = currentVersion
+    manifest.attributes provider: 'gradle'
+}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url "http://repo.maven.apache.org/maven2" }
+    maven {
+        url "${artifactory_url_repo}"
+        credentials {
+            username "${artifactory_deploy_user}"
+            password "${artifactory_deploy_password}"
+        }
+    }
+}
+
+dependencies {
+
+}
+publishing {
+    publications {
+        mavenJavaConfig(MavenPublication) {
+            from components.java
+
+            artifactId 'yaolog-shadow'
+            group 'org.nimdaved.util'
+            version currentVersion
+
+            artifact jar
+        }
+    }
+}
+
+

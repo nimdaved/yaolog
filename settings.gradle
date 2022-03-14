@@ -1,0 +1,6 @@
+rootProject.name = 'yaolog'
+
+include ':yaolog-config'
+include ':yaolog-util'
+include ':yaolog-shadow'
+

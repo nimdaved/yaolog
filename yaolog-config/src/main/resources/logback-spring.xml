@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- scan="true" enables run time log configuration  -->
+<configuration scan="true">
+	<!-- use Spring defaults -->
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+	<!-- log when settings changed -->
+	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />    
+	<property scope="context" resource="yaolog-config.properties" />
+
+	<springProfile name="local,dev">
+		<logger name="${root_logger}" level="${logging.level:-INFO}"
+			additivity="false">
+			<appender-ref ref="FILE" />
+		</logger>
+		<logger name="org.hibernate" level="WARN"
+			additivity="false">
+			<appender-ref ref="FILE" />
+		</logger>
+	</springProfile>
+
+	<springProfile name="local, dev, qa, stage, prod">
+		<logger name="${root_logger}" level="${logging.level:-INFO}"
+			additivity="false">
+			<appender-ref ref="CONSOLE" />
+		</logger>
+	</springProfile>	
+	
+</configuration>
