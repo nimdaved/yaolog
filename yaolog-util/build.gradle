@@ -29,8 +29,8 @@ jar {
     archiveVersion = currentVersion
     manifest.attributes provider: 'gradle'
 }
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+//sourceCompatibility = 1.8
+//targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
