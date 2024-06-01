@@ -38,7 +38,7 @@ dependencies {
  }
 
 
-
+/*
 artifactory {
     contextUrl = "${artifactory_url_repo}"
     publish {
@@ -63,3 +63,4 @@ artifactory {
         repoKey = 'jcenter'
     }
 }
+*/
