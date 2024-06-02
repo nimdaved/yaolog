@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '1.4.2.RELEASE'
+        springBootVersion = '3.3.0'
     }
     
     repositories {
@@ -8,7 +8,7 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies { 
-     	classpath('io.spring.gradle:dependency-management-plugin:0.5.2.RELEASE')
+     	classpath('io.spring.gradle:dependency-management-plugin:1.1.5')
      	classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
     }
 }
@@ -29,8 +29,6 @@ jar {
     archiveVersion = currentVersion
     manifest.attributes provider: 'gradle'
 }
-//sourceCompatibility = 1.8
-//targetCompatibility = 1.8
 
 repositories {
     mavenCentral()

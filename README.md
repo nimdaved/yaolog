@@ -5,10 +5,11 @@ These are yet another opinionated (yao) logging utility libraries. The library n
 		
 Description:
 =
-There are two libraries included: yaolog-config and yaolog-util
+There are three libraries included: yaolog-config, yaolog-util, and yaolog-shadow
 1. yaolog-config is opinionated configuration of spring boot project with logback. It spares innocent user from inclusion of spring-logback.xml and decision of what to log in every project by inclusion of this library.
 
 2. yaolog-util is opinionated way of logging exceptions and method entry/exit points
+3. yalolog-shadow allows to override default intercepted package. In order to override just exclude this artifact and redefine Shadow.java in your project 
 
 Usage examples:
 1. Debug method name, parameters and return values on entry/exit of any public method. Do nothing, you are already covered :-)

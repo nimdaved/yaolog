@@ -7,7 +7,7 @@ plugins {
     id 'maven-publish'
 }
 
-sourceCompatibility = 1.8
+
 group 'org.nimdaved.util' // Maven groupId
 
 version currentVersion // Maven version
@@ -38,10 +38,10 @@ dependencies {
  }
 
 
-/*
+
 artifactory {
-    contextUrl = "${artifactory_url_repo}"
     publish {
+        contextUrl = "${artifactory_url_repo}"
         repository {
             repoKey = 'libs-release-local' // The Artifactory repository key to publish to
             username = "${artifactory_deploy_user}" // The publisher user name
@@ -59,8 +59,5 @@ artifactory {
             publishPom = true
         }
     }
-    resolve {
-        repoKey = 'jcenter'
-    }
 }
-*/
+
