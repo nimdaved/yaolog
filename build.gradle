@@ -1,16 +1,25 @@
 
 plugins {
-    id 'java'
+    id 'java-library'
     id 'eclipse'
     id 'idea'
     id 'com.jfrog.artifactory' version "+"
     id 'maven-publish'
+    // publication to maven central
+    id 'org.jreleaser' version '1.12.0'
+
 }
 
 
 group 'org.nimdaved.util' // Maven groupId
 
 version currentVersion // Maven version
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+
+}
 
 jar {
     manifest {
@@ -33,7 +42,7 @@ repositories {
 
 dependencies {
 	 implementation(":yaolog-config")
-	 compileOnly(':yaolog-util:' + version)
+     api(':yaolog-util:' + version)
      compileOnly(':yaolog-shadow:')
  }
 
@@ -51,12 +60,53 @@ artifactory {
             // Reference to Gradle publications defined in the build script.
             // This is how we tell the Artifactory Plugin which artifacts should be
             // published to Artifactory.
-            publications('mavenJavaUtil','mavenJavaConfig')
+            publications('mavenJavaShadow', 'mavenJavaUtil' ,'mavenJavaConfig')
             publishArtifacts = true
             // Properties to be attached to the published artifacts.
-            properties = ['qa.level': 'basic', 'dev.team' : 'core']
+            properties = ['qa.level': 'basic']
             // Publish generated POM files to Artifactory (true by default)
             publishPom = true
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenYaolog(MavenPublication) {
+            from components.java
+
+            artifactId 'yaolog'
+            group 'com.nimdaved.util'
+            version currentVersion
+
+            pom {
+                name = 'yaolog'
+                description = 'Opinionated conventional and AOP logging in java projects'
+                url = 'https://github.com/nimdaved/yaolog'
+                inceptionYear = '2012'
+                licenses {
+                    license {
+                        name = 'Apache-2.0'
+                        url = 'https://spdx.org/licenses/Apache-2.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'nimdaved'
+                        name = 'Alexander Bronshtein'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/nimdaved/yaolog.git'
+                    developerConnection = 'scm:git:ssh://github.com/nimdaved/yalog.git'
+                    url = 'http://github.com/nimdaved/yaolog'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = layout.buildDirectory.dir('staging-deploy')
         }
     }
 }

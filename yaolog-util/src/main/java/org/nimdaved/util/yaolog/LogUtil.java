@@ -1,23 +1,5 @@
 package org.nimdaved.util.yaolog;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -34,6 +16,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+
+/**
+ * Opinionated conventional and AOP logging utility for reducing code clutter during logging method invokation with parameters;
+ * method exit with and without return value; and exceptions thrown within method
+ *
+ */
 // These annotations may be removed, if LogUtil to be instantiated in Spring @Configuration files
 @Component
 @Aspect
@@ -95,48 +96,103 @@ public class LogUtil {
   private @Value("${yaolog.method.info.client: true}") boolean infoClient;
   private @Value("${spring.profiles.active:UNSET}") String cloudEnv;
 
+  /**
+   * Gets logger from the memory cache or LogFactory. It is usefull if Logger is not defined in the clazz
+   * @param clazz
+   * @return
+   */
   private static Logger getLogger(Class<?> clazz) {
     return LOGGERS.computeIfAbsent(clazz, LoggerFactory::getLogger);
   }
 
+  /**
+   * Gets own class logger
+   * @return
+   */
   private static Logger getLogger() {
     return getLogger(LogUtil.class);
   }
 
+  /**
+   * Gets logger from the memory cache or LogFactory. It is usefull if Logger is not defined in the object.
+   * Usage in any object: LogUtil.getLogger(this)
+   * @param object that reqire logging
+   * @return logger
+   */
   private static Logger getLogger(Object object) {
     return object instanceof Logger ? (Logger) object : getLogger(object.getClass());
   }
 
+  /**
+   * Sets application log level
+   * @param appLogLevel application log level
+   */
   public static void setAppLogLevel(Level appLogLevel) {
     LogUtil.appLogLevel = appLogLevel;
   }
 
+  /**
+   * Gets application log level
+   * @param appLogLevel application log level
+   */
   public static void setAppLogLevel(String appLogLevel) {
     if (StringUtils.isNotBlank(appLogLevel)) {
       setAppLogLevel(Level.valueOf(appLogLevel));
     }
   }
 
+  /**
+   * Checks cumulative debug enablement
+   * @param logger logger
+   * @return true if debug enabled
+   */
   public static boolean isDebugEnabled(Logger logger) {
     return logger.isDebugEnabled() && isAppLogEnabled(Level.DEBUG);
   }
 
+  /**
+   * Checks cumulative info level enablement
+   * @param logger logger
+   * @return true if info enabled
+   */
   public static boolean isInfoEnabled(Logger logger) {
     return logger.isInfoEnabled() && isAppLogEnabled(Level.INFO);
   }
 
+  /**
+   * Checks cumulative warn level enablement
+   * @param logger logger
+   * @return true if warn enabled
+   */
   public static boolean isWarnEnabled(Logger logger) {
     return logger.isWarnEnabled() && isAppLogEnabled(Level.WARN);
   }
 
+  /**
+   * Checks cumulative error level enablement
+   * @param logger logger
+   * @return true if error enabled
+   */
   public static boolean isErrorEnabled(Logger logger) {
     return logger.isErrorEnabled() && isAppLogEnabled(Level.ERROR);
   }
 
+  /**
+   * Checks if application log enablement is more restrictive than logger enablement
+   * @param request logging level
+   * @return true if application log enablement is more restrictive than logger enablement
+   */
   public static boolean isAppLogEnabled(Level request) {
     return appLogLevel.toInt() <= request.toInt();
   }
 
+  /**
+   * Emits info or debug log message, based on parameters
+   * @param logger
+   * @param info
+   * @param debug
+   * @param message
+   */
   private static void infoOrDebug(Logger logger, boolean info, boolean debug, String message) {
     if (info) {
       logger.info(message);
@@ -145,6 +201,12 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Constructs duration message when startTime is known.
+   * @param methodName name of the method
+   * @param startTime previously measured method start time
+   * @return "Stopwatch message" for the method logging
+   */
   public static String methodDurationMessage(String methodName, Instant startTime) {
     StringBuilder sb = new StringBuilder(methodName).append(COLON).append(METHOD_DURATION);
 
@@ -156,10 +218,23 @@ public class LogUtil {
     return sb.toString();
   }
 
+  /**
+   * Null-safe logger retrival
+   * @param any object that requires logging
+   * @return logger
+   * @param <T> parameter type
+   */
   public static <T> Logger log(T any) {
     return (any == null ? getLogger() : ((any instanceof Logger) ? (Logger) any : getLogger(any)));
   }
 
+  /**
+   * Generic gedug message logger
+   * @param any object that requires logging
+   * @param msg log message
+   * @param args message arguments
+   * @param <T> parameter type
+   */
   public static <T> void debug(T any, String msg, Object... args) {
     Logger logger = log(any);
     if (isDebugEnabled(log(any))) {
@@ -175,6 +250,13 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Generic info message logger
+   * @param any object that requires logging
+   * @param msg log message
+   * @param args message arguments
+   * @param <T> parameter type
+   */
   public static <T> void info(T any, String msg, Object... args) {
     Logger logger = log(any);
     if (isInfoEnabled(log(any))) {
@@ -190,6 +272,13 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Generic warn message logger
+   * @param any object that requires logging
+   * @param msg log message
+   * @param args message arguments
+   * @param <T> parameter type
+   */
   public static <T> void warn(T any, String msg, Object... args) {
     Logger logger = log(any);
     if (isWarnEnabled(log(any))) {
@@ -205,6 +294,13 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Generic error message logger
+   * @param any object that requires logging
+   * @param msg log message
+   * @param args message arguments
+   * @param <T> parameter type
+   */
   public static <T> void error(T any, String msg, Object... args) {
     Logger logger = log(any);
     if (isErrorEnabled(log(any))) {
@@ -220,6 +316,13 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Logs method entry when method name is supplied
+   * @param any object that requires logging
+   * @param methodName that requires logging
+   * @param parameters method parameters
+   * @param <T> parameter type
+   */
   public static <T> void logMethodEntry(T any, String methodName, Object... parameters) {
     if (isDebugEnabled(log(any))) {
       log(any).debug(
@@ -227,11 +330,24 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Logs method entry when method name is not supplied
+   * @param any object that requires logging
+   * @param parameters method that requires logging
+   * @param <T> parameter type
+   */
   public static <T> void logMethodEntry(T any, Object... parameters) {
     if (isDebugEnabled(log(any)))
       logMethodEntry(any, inferCallerName(DEFAULT_STACK_LEVEL), parameters);
   }
 
+  /**
+   * Logs method exit when method name is supplied
+   * @param any object that requires logging
+   * @param methodName method that requires logging
+   * @param retVal method's return value
+   * @param <T> parameter type
+   */
   public static <T> void logMethodExit(T any, String methodName, Object... retVal) {
     if (isDebugEnabled(log(any))) {
       log(any)
@@ -239,12 +355,27 @@ public class LogUtil {
     }
   }
 
+  /**
+   * Logs method exit when method name is supplied
+   * @param any object that requires logging
+   * @param retVal method's return value
+   * @param <T> parameter type
+   */
   public static <T> void logMethodExit(T any, Object... retVal) {
     if (isDebugEnabled(log(any))) {
       logMethodExit(any, inferCallerName(DEFAULT_STACK_LEVEL), retVal);
     }
   }
 
+  /**
+   * Logs error on exception within method
+   * @param any method's object
+   * @param e method's exception
+   * @param methodName of the method where exception is thrown
+   * @param parameters method's parameters
+   * @return logged message
+   * @param <T> parameter type
+   */
   public static <T> String errorMethodException(T any, Throwable e, String methodName,
       Object... parameters) {
     String msg = methodWithException(methodName, e, parameters);
@@ -254,11 +385,28 @@ public class LogUtil {
     return msg;
   }
 
+  /**
+   * Logs error on exception within method
+   * @param any method's object
+   * @param e method's exception
+   * @param parameters method's parameters
+   * @return logged message
+   * @param <T> parameter type
+   */
   public static <T> String errorMethodException(T any, Throwable e, Object... parameters) {
 
     return errorMethodException(any, e, inferCallerName(DEFAULT_STACK_LEVEL), parameters);
   }
 
+  /**
+   * Logs exception, wraps it with subclass of Runtime exception, then rethrows new exception
+   * @param any  object that requires logging
+   * @param t original exception
+   * @param wrapper subclass of Runtime exception
+   * @param parameters method's parameters
+   * @param <T> parameter type
+   * @param <U> wrapper exception type
+   */
   public static <T, U extends RuntimeException> void errorWrapThrow(T any, Throwable t,
       Class<U> wrapper, Object... parameters) {
     String msg = errorMethodException(any, t, inferCallerName(DEFAULT_STACK_LEVEL), parameters);
@@ -288,6 +436,15 @@ public class LogUtil {
     return log.getName() + SPACE;
   }
 
+  /**
+   * Logs exception within method with debug log level
+   * @param any method's object
+   * @param e method's exception
+   * @param methodName of the method where exception is thrown
+   * @param parameters method's parameters
+   * @return logged message
+   * @param <T> parameter type
+   */
   public static <T> String logMethodException(T any, Throwable e, String methodName,
       Object... parameters) {
     String msg = methodWithException(methodName, e, parameters);
@@ -298,38 +455,79 @@ public class LogUtil {
     return msg;
   }
 
+  /**
+   * Logs exception within method with debug log level
+   * @param any method's object
+   * @param e method's exception
+   * @param parameters method's parameters
+   * @return logged message
+   * @param <T> parameter type
+   */
   public static <T> String logMethodException(T any, Throwable e, Object... parameters) {
     return logMethodException(any, e, inferCallerName(DEFAULT_STACK_LEVEL), parameters);
   }
 
+  /**
+   * Logs exception at debug level, wraps it with subclass of Runtime exception, then rethrows new exception
+   * @param any  object that requires logging
+   * @param t original exception
+   * @param wrapper subclass of Runtime exception
+   * @param parameters method's parameters
+   * @param <T> parameter type
+   */
   public static <T> void logWrapThrow(T any, Throwable t, Class<? extends RuntimeException> wrapper,
       Object... parameters) {
     String msg = logMethodException(any, t, inferCallerName(DEFAULT_STACK_LEVEL), parameters);
     throwWrapped(any, t, wrapper, msg);
   }
 
+  /**
+   * Builds method entry log message that includes method name and parameters
+   * @param methodName name of the method
+   * @param parameters method parameters
+   * @return message that includes method name and parameters
+   */
   public static String methodWithParameters(String methodName, Object... parameters) {
     return COLON + SPACE + buildMethodName(methodName, PARAMS, HIPHEN, parameters);
   }
 
+  /**
+   * Builds method exit log message that includes method name and return value
+   * @param methodName name of the method
+   * @param retVal method return value. Object... data type allows to pass array
+   * @return message that includes method name and return value
+   */
   public static String methodWithReturnValue(String methodName, Object... retVal) {
     return COLON + SPACE + buildMethodName(methodName, RETURN_VALUE, HIPHEN, retVal);
   }
 
+  /**
+   * Builds "method exit with exception" log message that includes method name, parameters, and exception
+   * @param methodName name of the method
+   * @param e thrown exception
+   * @param parameters method parameters
+   * @return "method exit with exception" log message that includes method name, parameters, and exception
+   */
   public static String methodWithException(String methodName, Throwable e, Object... parameters) {
     return METHOD_EXIT_WITH_EXCEPTION + buildMethodName(methodName, PARAMS, HIPHEN, parameters)
         + (e == null ? "" : DOT + SPACE + e.getMessage());
   }
 
+  /**
+   * Converts method parameters into String
+   * @param parameters method parameters
+   * @return method parameters as string
+   */
   public static String getMethodParamString(Object[] parameters) {
     return new StringBuffer(METHOD_ENTRY).append(HIPHEN).append(PARAMS).append(SPACE)
         .append(Arrays.deepToString(parameters)).toString();
   }
 
-  /*
-   * Conventional logging
+  /**
+   * Converts method return value into String
+   * @param retVal method return value. Could be null or absent
+   * @return method return value as String
    */
-
   public static String getMethodReturnString(Object... retVal) {
     return new StringBuffer(METHOD_EXIT).append(HIPHEN).append(PARAMS).append(SPACE)
         .append(Arrays.deepToString(retVal)).toString();
@@ -348,6 +546,11 @@ public class LogUtil {
     return StringReplacer.replaceNewLine(sb.toString());
   }
 
+  /**
+   * Infers method name by analyzing stack frame at stackLevel depth
+   * @param stackLevel expected stack frame that contains method name
+   * @return method name
+   */
   public static String inferCallerName(int stackLevel) {
     String callerName = "";
     try {
@@ -363,22 +566,45 @@ public class LogUtil {
     return callerName;
   }
 
+  /**
+   * Calculates null safe array length
+   * @param values Array. Could be null
+   * @return null safe array length
+   * @param <T> parameter type
+   */
   public static <T> int getCount(T[] values) {
     return values == null ? 0 : values.length;
   }
 
+  /**
+   * Checks if array contains any items
+   * @param values Array. Could be null
+   * @return true for non-empty arrays, otherwise false
+   * @param <T> parameter type
+   */
   public static <T> boolean hasCount(T[] values) {
     return getCount(values) != 0;
   }
 
-  /*
-   * AOP logging
+  /**
+   * Instantiated by AOP
+   */
+  public LogUtil() {
+    super();
+  }
+
+
+  /**
+   * Pointcut marker for AOP logging
    */
   @Pointcut(LOG_POINTCUT_EXPRESSION)
   private void loggingPointcut() {
     // AOP point cut marker method
   }
 
+  /**
+   * Intializes AOP logging configuration
+   */
   @PostConstruct
   public void initAspects() {
     // you need this if logback is not included in classpath
@@ -509,9 +735,12 @@ public class LogUtil {
     return lessVerbose(value, COLLECTION_LOG_LIMIT);
   }
 
-  // Next line (original implementation) is superseded with @Around("loggingPointcut()"), allowing
-  // to log method duration
-  // @AfterReturning(pointcut = "loggingPointcut()", returning = "result")
+  /**
+   * AOP logging of normal method exit
+   * deprecated. @AfterReturning is superseded with @Around("loggingPointcut()") as latter allows to log method duration
+   * @param joinPoint method join point
+   * @param result method return value
+   */
   public void logAfterReturning(JoinPoint joinPoint, Object result) {
     Logger logger = getLogger(joinPoint);
     boolean info = isInfoEnabled(logger) && infoAnnotated(joinPoint);
@@ -522,9 +751,13 @@ public class LogUtil {
     }
   }
 
-  // Next line (original implementation) is superseded with @Around("loggingPointcut()"), allowing
-  // to log method duration
-  // @AfterThrowing(pointcut = "loggingPointcut()", throwing = "e")
+  /**
+   * AOP logging of exceptional method exit
+   * deprecated. @AfterThrowing is superseded with @Around("loggingPointcut()") as latter allows
+   * to log method duration
+   * @param joinPoint method join point
+   * @param e exception caused method exit
+   */
   public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {
     final Logger logger = getLogger(joinPoint);
     final boolean hideStackTrace = isExclusion(e.getClass(), exceptionLogStacktraceHideClasses);
@@ -569,6 +802,12 @@ public class LogUtil {
     }
   }
 
+  /**
+   * AOP logging around public methods
+   * @param joinPoint method's join point
+   * @return method's return value
+   * @throws Throwable exception thrown by method
+   */
   @Around("loggingPointcut()")
   public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
     Instant startTime = null;
@@ -644,19 +883,4 @@ public class LogUtil {
     return getLogger(joinPoint.getTarget().getClass());
   }
 
-  // Nice, unused enum. Starting point of "may be in future" re-factoring (MBIFR).
-  public enum MethodPoint {
-    ENTRY(METHOD_ENTRY), EXIT(METHOD_EXIT), EXIT_WITH_EXCEPTION(METHOD_EXIT_WITH_EXCEPTION);
-
-    private final String description;
-
-    MethodPoint(String description) {
-      this.description = description;
-    }
-
-    @Override
-    public String toString() {
-      return description;
-    }
-  }
 }
