@@ -15,15 +15,25 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'java-library'
     id 'eclipse'
     id 'idea'
-    id 'io.spring.dependency-management' version '+'
     id 'maven-publish'
+    // publication to maven central
+    id 'org.jreleaser' version '1.12.0'
+    id 'io.spring.dependency-management' version '+'
+
 }
 
 group 'org.nimdaved.util' // Maven groupId
 version currentVersion // Maven version
-	
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+
+}
+
 jar {
     archiveBaseName = 'yaolog-util'
     archiveVersion = currentVersion
@@ -47,7 +57,8 @@ dependencies {
     compileOnly('org.springframework.boot:spring-boot-starter-aop:+')
     compileOnly('javax.annotation:javax.annotation-api:+')
     compileOnly('org.apache.commons:commons-lang3:+')
-    compileOnly project(':yaolog-shadow')
+    //api scope is choosen for compatibilty with JReleaser; other scopes resulted in poor translation to maven POM
+    api project(':yaolog-shadow:')
 }
 
 
@@ -60,8 +71,36 @@ publishing {
             group 'com.nimdaved.util'
             version currentVersion
 
-            artifact jar
+            pom {
+                name = 'yaolog-util'
+                description = 'Utility for conventional and AOP logging in java projects'
+                url = 'https://github.com/nimdaved/yaolog/tree/main/yaolog-util'
+                inceptionYear = '2012'
+                licenses {
+                    license {
+                        name = 'Apache-2.0'
+                        url = 'https://spdx.org/licenses/Apache-2.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'nimdaved'
+                        name = 'Alexander Bronshtein'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/nimdaved/yaolog.git'
+                    developerConnection = 'scm:git:ssh://github.com/nimdaved/yalog.git'
+                    url = 'http://github.com/nimdaved/yaolog/tree/main/yaolog-util'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = layout.buildDirectory.dir('staging-deploy')
         }
     }
 }
+
 
